@@ -68,6 +68,8 @@ esac
 char() {
   if [ "$1" = "#ebedf0" ]; then
     echo "$block_empty"
+  elif [ "$1" = "#9be9a8" ]; then
+    echo -e "\033[38;5;250m$block_full\033[0m"
   else
     echo "$block_full"
   fi
@@ -81,7 +83,11 @@ fi
 for d in $(seq 0 6); do
   for w in $(seq 0 51); do
     hex="${days[w*7+d]}"
-    printf "\e[38;2;%d;%d;%dm%s\e[m%s" "$((16#${hex:1:2}))" "$((16#${hex:3:2}))" "$((16#${hex:5:2}))" "$(char "$hex")" "$space"
+    if [ "$hex" != "#ebedf0" ] && [ "$hex" != "#9be9a8" ]; then
+      printf "\e[38;2;%d;%d;%dm%s\e[m%s" "$((16#${hex:1:2}))" "$((16#${hex:3:2}))" "$((16#${hex:5:2}))" "$(char "$hex")" "$space"
+    else
+      printf "%s%s" "$(char "$hex")" "$space"
+    fi
   done
   printf "\n"
 done
