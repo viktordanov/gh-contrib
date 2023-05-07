@@ -5,20 +5,21 @@ usage() {
   echo "Usage: gh contrib [--style <style>]"
 }
 
-days=( $(gh api graphql -f query='{
+data=( $(gh api graphql -f query='{
   viewer {
     contributionsCollection {
       contributionCalendar {
         weeks {
           contributionDays {
             color
+            contributionCount
           }
         }
       }
     }
   }
-}' --cache 24h --jq '..|.color?' | grep .) )
- 
+}' --cache 24h --jq '..|.color?, .contributionCount?' | grep .) )
+
 style=block
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -38,40 +39,62 @@ while [ $# -gt 0 ]; do
 done
 
 case "$style" in
-block)
-  block_full="█"
-  block_empty="$block_full";;
-square)
-  block_full="◼︎"
-  block_empty="$block_full";;
-dot)
-  block_full="•"
-  block_empty="$block_full";;
-shade)
-  block_full="▒"
-  block_empty="░";;
-fisheye)
-  block_full="◉"
-  block_empty="●";;
-diamond)
-  block_full="♦︎"
-  block_empty="$block_full";;
-plus)
-  block_full="✚"
-  block_empty="•";;
-*)
-  echo "error: style '$style' not recognized" >&2
-  echo "available styles: block square dot shade fisheye diamond plus" >&2
-  exit 1;;
+  block)
+    block_full="█"
+    block_empty="$block_full";;
+  *)
+    echo "error: style '$style' not recognized" >&2
+    exit 1;;
 esac
 
-char() {
-  if [ "$1" = "#ebedf0" ]; then
-    echo "$block_empty"
-  elif [ "$1" = "#9be9a8" ]; then
-    echo -e "\033[38;5;250m$block_full\033[0m"
+get_level() {
+  if [ "$1" -eq 0 ]; then
+    echo "0"
+  elif [ "$1" -lt 2 ]; then
+    echo "1"
+  elif [ "$1" -lt 4 ]; then
+    echo "2"
+  elif [ "$1" -lt 8 ]; then
+    echo "3"
   else
-    echo "$block_full"
+    echo "4"
+  fi
+}
+
+get_color() {
+  case "$1" in
+    0)
+      echo -e "\033[48;5;235m";;
+    1)
+      echo -e "\033[48;5;243m";;
+    2)
+      echo -e "\033[48;5;102m";;
+    3)
+      echo -e "\033[48;5;34m";;
+    4)
+      echo -e "\033[48;5;22m";;
+  esac
+}
+
+display_label() {
+  if [ "$1" -eq 0 ] && [ "$2" -eq 2 ]; then
+    echo -n "Sun"
+  elif [ "$1" -eq 1 ] && [ "$2" -eq 2 ]; then
+    echo -n "Mon"
+  elif [ "$1" -eq 2 ] && [ "$2" -eq 2 ]; then
+    echo -n "Tue"
+  elif [ "$1" -eq 3 ] && [ "$2" -eq 2 ]; then
+    echo -n "Wed"
+  elif [ "$1" -eq 4 ] && [ "$2" -eq 2 ]; then
+    echo -n "Thu"
+  elif [ "$1" -eq 5 ] && [ "$2" -eq 2 ]; then
+    echo -n "Fri"
+  elif [ "$1" -eq 6 ] && [ "$2" -eq 2 ]; then
+    echo -n "Sat"
+  elif [ "$2" -eq 0 ]; then
+    printf " %2d" "$1"
+  else
+    echo -n "   "
   fi
 }
 
@@ -81,13 +104,22 @@ if [ -t 1 ] && [ "$(tput cols)" -lt 102 ]; then
 fi
 
 for d in $(seq 0 6); do
+  display_label $d 2
   for w in $(seq 0 51); do
-    hex="${days[w*7+d]}"
-    if [ "$hex" != "#ebedf0" ] && [ "$hex" != "#9be9a8" ]; then
-      printf "\e[38;2;%d;%d;%dm%s\e[m%s" "$((16#${hex:1:2}))" "$((16#${hex:3:2}))" "$((16#${hex:5:2}))" "$(char "$hex")" "$space"
-    else
-      printf "%s%s" "$(char "$hex")" "$space"
+    index=$((w * 14 + d * 2))
+    count="${data[index + 1]}"
+    level=$(get_level "$count")
+    color="$(get_color "$level")"
+
+    if [ "$d" -eq 0 ] && [ "$w" -eq 0 ]; then
+      printf "\n"
     fi
+
+    if [ "$d" -eq 0 ]; then
+      display_label $((w + 1)) 0
+    fi
+
+    printf "%s%s\e[0m%s" "$color" "$block_full" "$space"
   done
   printf "\n"
 done
