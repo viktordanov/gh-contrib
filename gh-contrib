@@ -103,6 +103,10 @@ if [ -t 1 ] && [ "$(tput cols)" -lt 102 ]; then
   space=""
 fi
 
+
+
+month_labels=(" J" " F" " M" " A" " M" " J" " J" " A" " S" " O" " N" " D")
+
 for d in $(seq 0 6); do
   display_label $d 2
   for w in $(seq 0 51); do
@@ -116,7 +120,9 @@ for d in $(seq 0 6); do
     fi
 
     if [ "$d" -eq 0 ]; then
-      display_label $((w + 1)) 0
+      month_index=$((w % 12))
+      month_label=${month_labels[month_index]}
+      printf "%s" "$month_label"
     fi
 
     printf "%s%s\e[0m%s" "$color" "$block_full" "$space"
