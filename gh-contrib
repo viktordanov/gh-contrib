@@ -18,7 +18,7 @@ data=( $(gh api graphql -f query='{
       }
     }
   }
-}' --cache 24h --jq '..|.color?, .contributionCount?' | grep .) )
+}' --cache 1m --jq '..|.color?, .contributionCount?' | grep .) )
 
 style=block
 while [ $# -gt 0 ]; do
