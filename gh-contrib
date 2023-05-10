@@ -2,7 +2,7 @@
 set -e
 
 usage() {
-  echo "Usage: gh contrib [--style <style>]"
+  echo "Usage: gh contrib [--style <style>] --transparent-empty"
 }
 
 data=( $(gh api graphql -f query='{
@@ -21,11 +21,16 @@ data=( $(gh api graphql -f query='{
 }' --cache 1m --jq '..|.color?, .contributionCount?' | grep .) )
 
 style=block
+transparent_empty=false
 while [ $# -gt 0 ]; do
   case "$1" in
     -s|--style)
       style="$2"
       shift 2
+      ;;
+    --transparent-empty)
+      transparent_empty=true
+      shift
       ;;
     -h|--help)
       usage
@@ -64,15 +69,15 @@ get_level() {
 get_color() {
   case "$1" in
     0)
-      echo -e "\033[48;2;64;64;64m";;     # dark gray
+      echo -e "\033[48;2;22;27;34m";;     # dark gray
     1)
-      echo -e "\033[48;2;96;128;96m";;    # medium grayish-green
+      echo -e "\033[48;2;14;68;41m";;     # use --color-calendar-graph-day-L1-bg
     2)
-      echo -e "\033[48;2;128;192;128m";;  # light grayish-green
+      echo -e "\033[48;2;0;109;50m";;     # use --color-calendar-graph-day-L2-bg
     3)
-      echo -e "\033[48;2;64;192;64m";;    # bright green
+      echo -e "\033[48;2;38;166;65m";;    # use --color-calendar-graph-day-L3-bg
     4)
-      echo -e "\033[48;2;0;255;0m";;      # brightest green
+      echo -e "\033[48;2;57;211;83m";;    # use --color-calendar-graph-day-L4-bg
   esac
 }
 
@@ -152,7 +157,10 @@ for d in $(seq 0 6); do
     if [ "$hex_color" = "#ebedf0" ]; then
       color="$(get_color "0")"
     fi
-
+    
+    if [ "$transparent_empty" = true ] && [ "$count" -eq 0 ]; then
+      color=""
+    fi
     printf "${color}${block_full}${reset_color}" 
   done
   printf "\n"
